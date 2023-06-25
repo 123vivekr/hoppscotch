@@ -16,6 +16,7 @@
     "buffer": "^6.0.3",
     "process": "^0.11.10",
     "rxjs": "^7.8.1",
+    "shell": "link:@tauri-apps/api/shell",
     "stream-browserify": "^3.0.0",
     "util": "^0.12.4",
     "vue": "^3.2.45",

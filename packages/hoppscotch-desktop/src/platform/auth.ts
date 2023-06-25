@@ -16,6 +16,8 @@ export const authEvents$ = new Subject<AuthEvent | { event: "token_refresh" }>()
 const currentUser$ = new BehaviorSubject<HoppUser | null>(null)
 export const probableUser$ = new BehaviorSubject<HoppUser | null>(null)
 
+import { open } from '@tauri-apps/api/shell';
+
 async function logout() {
   await axios.get(`${import.meta.env.VITE_BACKEND_API_URL}/auth/logout`, {
     withCredentials: true,
@@ -23,17 +25,15 @@ async function logout() {
 }
 
 async function signInUserWithGithubFB() {
-  window.location.href = `${import.meta.env.VITE_BACKEND_API_URL}/auth/github`
+  await open(`${import.meta.env.VITE_BACKEND_API_URL}/auth/github`);
 }
 
 async function signInUserWithGoogleFB() {
-  window.location.href = `${import.meta.env.VITE_BACKEND_API_URL}/auth/google`
+  await open(`${import.meta.env.VITE_BACKEND_API_URL}/auth/google`);
 }
 
 async function signInUserWithMicrosoftFB() {
-  window.location.href = `${
-    import.meta.env.VITE_BACKEND_API_URL
-  }/auth/microsoft`
+  await open(`${import.meta.env.VITE_BACKEND_API_URL}/auth/microsoft`);
 }
 
 async function getInitialUserDetails() {

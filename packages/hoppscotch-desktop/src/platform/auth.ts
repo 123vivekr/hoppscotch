@@ -17,6 +17,7 @@ const currentUser$ = new BehaviorSubject<HoppUser | null>(null)
 export const probableUser$ = new BehaviorSubject<HoppUser | null>(null)
 
 import { open } from '@tauri-apps/api/shell';
+import { listen } from '@tauri-apps/api/event';
 
 async function logout() {
   await axios.get(`${import.meta.env.VITE_BACKEND_API_URL}/auth/logout`, {
@@ -26,10 +27,27 @@ async function logout() {
 
 async function signInUserWithGithubFB() {
   await open(`${import.meta.env.VITE_BACKEND_API_URL}/auth/github`);
+  const unlisten = async () =>
+    await listen('scheme-request-received', async (event) => {
+      console.log('RECEIVED', event.payload);
+      // Handle the params from here, for instance storing the tokens
+    });
+  return () => {
+    unlisten();
+  };
 }
 
 async function signInUserWithGoogleFB() {
+  const unlisten = async () =>
+    await listen('scheme-request-received', async (event) => {
+      window.alert()
+      console.log('RECEIVED', event.payload);
+      // Handle the params from here, for instance storing the tokens
+    });
   await open(`${import.meta.env.VITE_BACKEND_API_URL}/auth/google`);
+  return () => {
+    unlisten();
+  };
 }
 
 async function signInUserWithMicrosoftFB() {

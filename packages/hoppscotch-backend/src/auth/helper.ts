@@ -14,6 +14,7 @@ enum AuthTokenType {
 export enum Origin {
   ADMIN = 'admin',
   APP = 'app',
+  DESKTOP = 'desktop'
 }
 
 /**
@@ -37,6 +38,7 @@ export const authCookieHandler = (
   redirect: boolean,
   redirectUrl: string | null,
 ) => {
+  const isDesktopClient = redirectUrl === "desktop";
   const currentTime = DateTime.now();
   const accessTokenValidity = currentTime
     .plus({
@@ -49,28 +51,33 @@ export const authCookieHandler = (
     })
     .toMillis();
 
-  res.cookie(AuthTokenType.ACCESS_TOKEN, authTokens.access_token, {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'lax',
-    maxAge: accessTokenValidity,
-  });
-  res.cookie(AuthTokenType.REFRESH_TOKEN, authTokens.refresh_token, {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'lax',
-    maxAge: refreshTokenValidity,
-  });
+  if (!isDesktopClient) {
+    res.cookie(AuthTokenType.ACCESS_TOKEN, authTokens.access_token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      maxAge: accessTokenValidity,
+    });
+    res.cookie(AuthTokenType.REFRESH_TOKEN, authTokens.refresh_token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      maxAge: refreshTokenValidity,
+    });
 
-  if (!redirect) {
-    return res.status(HttpStatus.OK).send();
+    if (!redirect) {
+      return res.status(HttpStatus.OK).send();
+    }
+
+    // check to see if redirectUrl is a whitelisted url
+    const whitelistedOrigins = process.env.WHITELISTED_ORIGINS.split(',');
+    if (!whitelistedOrigins.includes(redirectUrl))
+      // if it is not redirect by default to REDIRECT_URL
+      redirectUrl = process.env.REDIRECT_URL;
+
+  } else {
+    redirectUrl = `${process.env.VITE_DESKTOP_BASE_URL}/oauth?access_token=${authTokens.access_token}&refresh_token=${authTokens.refresh_token}`;
   }
-
-  // check to see if redirectUrl is a whitelisted url
-  const whitelistedOrigins = process.env.WHITELISTED_ORIGINS.split(',');
-  if (!whitelistedOrigins.includes(redirectUrl))
-    // if it is not redirect by default to REDIRECT_URL
-    redirectUrl = process.env.REDIRECT_URL;
 
   return res.status(HttpStatus.OK).redirect(redirectUrl);
 };

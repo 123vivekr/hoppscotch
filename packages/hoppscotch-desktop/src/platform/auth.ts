@@ -26,32 +26,15 @@ async function logout() {
 }
 
 async function signInUserWithGithubFB() {
-  await open(`${import.meta.env.VITE_BACKEND_API_URL}/auth/github`);
-  const unlisten = async () =>
-    await listen('scheme-request-received', async (event) => {
-      console.log('RECEIVED', event.payload);
-      // Handle the params from here, for instance storing the tokens
-    });
-  return () => {
-    unlisten();
-  };
+  await open(`${import.meta.env.VITE_BACKEND_API_URL}/auth/github?redirect_uri=desktop`);
 }
 
 async function signInUserWithGoogleFB() {
-  const unlisten = async () =>
-    await listen('scheme-request-received', async (event) => {
-      window.alert()
-      console.log('RECEIVED', event.payload);
-      // Handle the params from here, for instance storing the tokens
-    });
-  await open(`${import.meta.env.VITE_BACKEND_API_URL}/auth/google`);
-  return () => {
-    unlisten();
-  };
+  await open(`${import.meta.env.VITE_BACKEND_API_URL}/auth/google?redirect_uri=desktop`);
 }
 
 async function signInUserWithMicrosoftFB() {
-  await open(`${import.meta.env.VITE_BACKEND_API_URL}/auth/microsoft`);
+  await open(`${import.meta.env.VITE_BACKEND_API_URL}/auth/microsoft?redirect_uri=desktop`);
 }
 
 async function getInitialUserDetails() {
@@ -184,7 +167,7 @@ async function refreshToken() {
 
 async function sendMagicLink(email: string) {
   const res = await axios.post(
-    `${import.meta.env.VITE_BACKEND_API_URL}/auth/signin`,
+    `${import.meta.env.VITE_BACKEND_API_URL}/auth/signin?origin=desktop`,
     {
       email,
     },
@@ -251,6 +234,31 @@ export const def: AuthPlatformDef = {
     const probableUser = JSON.parse(getLocalConfig("login_state") ?? "null")
     probableUser$.next(probableUser)
     await setInitialUser()
+
+    await listen('scheme-request-received', async (event: any) => {
+      let deep_link = event.payload as string;
+
+      const params = new URLSearchParams(deep_link.split('?')[1]);
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+      const token = params.get('token');
+
+      function isNotNullOrUndefined(x: any) {
+        return x !== null && x !== undefined;
+      }
+
+      if (isNotNullOrUndefined(accessToken) && isNotNullOrUndefined(refreshToken)) {
+        document.cookie = `access_token=${accessToken}`; 
+        document.cookie = `refresh_token=${refreshToken}`; 
+        window.location.href = "/"
+        return;
+      }
+
+      if (isNotNullOrUndefined(token)) {
+        setLocalConfig("magicLinkUrl", deep_link);
+        await this.processMagicLink();
+      }
+    });
   },
 
   waitProbableLoginToConfirm() {
@@ -336,7 +344,8 @@ export const def: AuthPlatformDef = {
   },
 
   async processMagicLink() {
-    if (this.isSignInWithEmailLink(window.location.href)) {
+    let url = getLocalConfig("magicLinkUrl") as string;
+    if (this.isSignInWithEmailLink(url)) {
       const deviceIdentifier = getLocalConfig("deviceIdentifier")
 
       if (!deviceIdentifier) {
@@ -345,10 +354,9 @@ export const def: AuthPlatformDef = {
         )
       }
 
-      await this.signInWithEmailLink(deviceIdentifier, window.location.href)
+      await this.signInWithEmailLink(deviceIdentifier, url)
 
       removeLocalConfig("deviceIdentifier")
-      window.location.href = "/"
     }
   },
 }

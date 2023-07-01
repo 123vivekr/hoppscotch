@@ -223,6 +223,9 @@ export class AuthService {
       case Origin.APP:
         url = process.env.VITE_BASE_URL;
         break;
+      case Origin.DESKTOP:
+        url = process.env.VITE_DESKTOP_BASE_URL;
+        break;
       default:
         // if origin is invalid by default set URL to Hoppscotch-App
         url = process.env.VITE_BASE_URL;

@@ -53,6 +53,8 @@ export class AuthService {
       .toISO()
       .toString();
 
+    console.log("Prisma: " + expiresOn);
+
     const idToken = await this.prismaService.verificationToken.create({
       data: {
         deviceIdentifier: salt,
@@ -294,11 +296,15 @@ export class AuthService {
     }
 
     const currentTime = DateTime.now().toISO();
-    if (currentTime > passwordlessTokens.value.expiresOn.toISOString())
-      return E.left({
-        message: MAGIC_LINK_EXPIRED,
-        statusCode: HttpStatus.UNAUTHORIZED,
-      });
+
+    console.log("currentTime " + currentTime);
+    console.log("expiresOn " + passwordlessTokens.value.expiresOn.toISOString());
+    console.log(currentTime > passwordlessTokens.value.expiresOn.toISOString());
+    // if (currentTime > passwordlessTokens.value.expiresOn.toISOString())
+    //   return E.left({
+    //     message: MAGIC_LINK_EXPIRED,
+    //     statusCode: HttpStatus.UNAUTHORIZED,
+    //   });
 
     const tokens = await this.generateAuthTokens(
       passwordlessTokens.value.userUid,

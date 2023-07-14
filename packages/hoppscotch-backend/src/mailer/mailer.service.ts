@@ -63,6 +63,7 @@ export class MailerService {
    */
   async sendAuthEmail(to: string, mailDesc: UserMagicLinkMailDescription) {
     try {
+      console.log(mailDesc);
       await this.nestMailerService.sendMail({
         to,
         template: mailDesc.template,

@@ -66,6 +66,7 @@ export const authCookieHandler = (
     });
 
     if (!redirect) {
+      console.log(authTokens);
       return res.status(HttpStatus.OK).send();
     }
 

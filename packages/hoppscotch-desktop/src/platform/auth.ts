@@ -18,11 +18,19 @@ export const probableUser$ = new BehaviorSubject<HoppUser | null>(null)
 
 import { open } from '@tauri-apps/api/shell';
 import { listen } from '@tauri-apps/api/event';
+import { invoke } from '@tauri-apps/api/tauri';
+import { getClient, Body, ResponseType } from '@tauri-apps/api/http';
 
 async function logout() {
   await axios.get(`${import.meta.env.VITE_BACKEND_API_URL}/auth/logout`, {
     withCredentials: true,
   })
+
+  // TODO: what creds?
+  // const client = await getClient();
+  // let url = `${import.meta.env.VITE_BACKEND_API_URL}/auth/logout`;
+
+  // const res = await client.post(url, Body.json({email: email}));
 }
 
 async function signInUserWithGithubFB() {
@@ -147,12 +155,37 @@ async function setInitialUser() {
 }
 
 async function refreshToken() {
+  console.log("REFRESH");
   const res = await axios.get(
     `${import.meta.env.VITE_BACKEND_API_URL}/auth/refresh`,
     {
       withCredentials: true,
     }
   )
+
+  let refresh_token = "";
+  const cookies = document.cookie.split(';');
+  for (let i = 0; i < cookies.length; i++) {
+    const cookie = cookies[i].trim();
+    if (cookie.startsWith('refresh_token=')) {
+      refresh_token = cookie.substring('refresh_token='.length);
+    }
+  }
+
+  await invoke('auth_refresh', {
+    refreshToken: refresh_token,
+    viteBackendApiUrl: `${import.meta.env.VITE_BACKEND_API_URL}/auth/refresh`
+  }).then((verify_response: any) => {
+    document.cookie = `access_token=${verify_response.refresh_token}`;
+    document.cookie = `refresh_token=${verify_response.access_token}`;
+
+    authEvents$.next({ event: "token_refresh" });
+  });
+
+  // const client = await getClient();
+  // let url = `${import.meta.env.VITE_BACKEND_API_URL}/auth/logout`;
+
+  // const res = await client.post(url, Body.json({ email: email }));
 
   const isSuccessful = res.status === 200
 
@@ -166,21 +199,18 @@ async function refreshToken() {
 }
 
 async function sendMagicLink(email: string) {
-  const res = await axios.post(
-    `${import.meta.env.VITE_BACKEND_API_URL}/auth/signin?origin=desktop`,
-    {
-      email,
-    },
-    {
-      withCredentials: true,
-    }
-  )
+  const client = await getClient();
+  let url = `${import.meta.env.VITE_BACKEND_API_URL}/auth/signin?origin=desktop`;
+
+  const res = await client.post(url, Body.json({ email }));
 
   if (res.data && res.data.deviceIdentifier) {
     setLocalConfig("deviceIdentifier", res.data.deviceIdentifier)
   } else {
     throw new Error("test: does not get device identifier")
   }
+
+  console.log("deviceIdentifier" + res.data.deviceIdentifier);
 
   return res.data
 }
@@ -238,18 +268,22 @@ export const def: AuthPlatformDef = {
     await listen('scheme-request-received', async (event: any) => {
       let deep_link = event.payload as string;
 
+      console.log(deep_link);
+
       const params = new URLSearchParams(deep_link.split('?')[1]);
       const accessToken = params.get('access_token');
       const refreshToken = params.get('refresh_token');
       const token = params.get('token');
+
+      console.log(token);
 
       function isNotNullOrUndefined(x: any) {
         return x !== null && x !== undefined;
       }
 
       if (isNotNullOrUndefined(accessToken) && isNotNullOrUndefined(refreshToken)) {
-        document.cookie = `access_token=${accessToken}`; 
-        document.cookie = `refresh_token=${refreshToken}`; 
+        document.cookie = `access_token=${accessToken}`;
+        document.cookie = `refresh_token=${refreshToken}`;
         window.location.href = "/"
         return;
       }
@@ -257,6 +291,7 @@ export const def: AuthPlatformDef = {
       if (isNotNullOrUndefined(token)) {
         setLocalConfig("magicLinkUrl", deep_link);
         await this.processMagicLink();
+        await setInitialUser();
       }
     });
   },
@@ -309,16 +344,32 @@ export const def: AuthPlatformDef = {
     const token = searchParams.get("token")
     const deviceIdentifier = getLocalConfig("deviceIdentifier")
 
-    await axios.post(
-      `${import.meta.env.VITE_BACKEND_API_URL}/auth/verify`,
-      {
-        token: token,
-        deviceIdentifier,
-      },
-      {
-        withCredentials: true,
-      }
-    )
+    // await invoke('auth_verify', {
+    //   token: token,
+    //   deviceIdentifier: deviceIdentifier,
+    //   viteBackendApiUrl: `${import.meta.env.VITE_BACKEND_API_URL}/auth/verify`
+    // }).then((verify_response: any) => {
+    //   document.cookie = `access_token=${verify_response.refresh_token}`;
+    //   document.cookie = `refresh_token=${verify_response.access_token}`;
+    // });
+
+    const client = await getClient();
+    let verify_url = `${import.meta.env.VITE_BACKEND_API_URL}/auth/verify`;
+
+    console.log(verify_url);
+
+    const res = await client.post(verify_url, Body.json({
+      token,
+      deviceIdentifier
+    }));
+
+    Object.keys(res.headers).forEach((element) => {
+      console.log(element);
+    })
+
+    console.log(Object.keys(res.headers));
+    console.log(Object.values(res.headers));
+    console.log("setcookie" + res.headers["set-cookie"]);
   },
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async setEmailAddress(_email: string) {
@@ -357,6 +408,8 @@ export const def: AuthPlatformDef = {
       await this.signInWithEmailLink(deviceIdentifier, url)
 
       removeLocalConfig("deviceIdentifier")
+
+      window.location.href = "/";
     }
   },
 }

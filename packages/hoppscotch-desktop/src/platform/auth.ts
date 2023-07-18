@@ -18,6 +18,7 @@ export const probableUser$ = new BehaviorSubject<HoppUser | null>(null)
 
 import { open } from '@tauri-apps/api/shell';
 import { listen } from '@tauri-apps/api/event';
+import { invoke } from '@tauri-apps/api/tauri';
 
 async function logout() {
   await axios.get(`${import.meta.env.VITE_BACKEND_API_URL}/auth/logout`, {
@@ -248,9 +249,14 @@ export const def: AuthPlatformDef = {
       }
 
       if (isNotNullOrUndefined(accessToken) && isNotNullOrUndefined(refreshToken)) {
-        document.cookie = `access_token=${accessToken}`; 
-        document.cookie = `refresh_token=${refreshToken}`; 
-        window.location.href = "/"
+        await invoke('start_server');
+        await axios.post('http://localhost:3001/', {
+            accessToken: accessToken,
+            refreshToken: refreshToken
+          }, { withCredentials: true });
+        await invoke('stop_server');
+        window.location.href = "/";
+
         return;
       }
 
@@ -357,6 +363,7 @@ export const def: AuthPlatformDef = {
       await this.signInWithEmailLink(deviceIdentifier, url)
 
       removeLocalConfig("deviceIdentifier")
+      window.location.href = "/";
     }
   },
 }

@@ -13,7 +13,10 @@
   "tauri": {
     "allowlist": {
       "shell": {
-        "open": true
+        "all": true,
+        "execute": true, 
+        "sidecar": true,
+        "open": true 
       }
     },
     "bundle": {
@@ -30,7 +33,7 @@
       "targets": "all"
     },
     "security": {
-      "csp": null
+      "csp": "none"
     },
     "updater": {
       "active": false

@@ -43,6 +43,10 @@ async function runRequest(
   const processedReq = preProcessRequest(req)
 
   try {
+    if (processedReq.data instanceof FormData) {
+      console.log(processedReq.data.get("file"))
+    }
+
     const res = await axios({
       ...processedReq,
       cancelToken,
@@ -89,7 +93,7 @@ async function runRequest(
 
 export const browserInterceptor: Interceptor = {
   interceptorID: "browser",
-  name: (t) => t("state.none"),
+  name: (t) => t("Browser"),
   selectable: { type: "selectable" },
   runRequest(req) {
     const cancelToken = axios.CancelToken.source()

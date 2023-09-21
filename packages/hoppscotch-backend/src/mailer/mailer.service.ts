@@ -43,12 +43,13 @@ export class MailerService {
     mailDesc: MailDescription | UserMagicLinkMailDescription,
   ) {
     try {
-      await this.nestMailerService.sendMail({
-        to,
-        template: mailDesc.template,
-        subject: this.resolveSubjectForMailDesc(mailDesc),
-        context: mailDesc.variables,
-      });
+      console.log(mailDesc);
+      // await this.nestMailerService.sendMail({
+      //   to,
+      //   template: mailDesc.template,
+      //   subject: this.resolveSubjectForMailDesc(mailDesc),
+      //   context: mailDesc.variables,
+      // });
     } catch (error) {
       return throwErr(EMAIL_FAILED);
     }
@@ -65,13 +66,13 @@ export class MailerService {
     mailDesc: AdminUserInvitationMailDescription,
   ) {
     try {
-      const res = await this.nestMailerService.sendMail({
-        to,
-        template: mailDesc.template,
-        subject: this.resolveSubjectForMailDesc(mailDesc),
-        context: mailDesc.variables,
-      });
-      return res;
+      console.log(mailDesc);
+      // const res = await this.nestMailerService.sendMail({
+      //   to,
+      //   template: mailDesc.template,
+      //   subject: this.resolveSubjectForMailDesc(mailDesc),
+      //   context: mailDesc.variables,
+      // });
     } catch (error) {
       return throwErr(EMAIL_FAILED);
     }

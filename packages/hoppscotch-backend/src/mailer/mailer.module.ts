@@ -11,8 +11,10 @@ import {
 @Module({
   imports: [
     NestMailerModule.forRoot({
-      transport:
-        process.env.MAILER_SMTP_URL ?? throwErr(MAILER_SMTP_URL_UNDEFINED),
+      transport: {
+        host: "localhost",
+        port: 25
+      },
       defaults: {
         from:
           process.env.MAILER_ADDRESS_FROM ??

@@ -18,6 +18,8 @@ export class GithubSSOGuard extends AuthGuard('github') implements CanActivate {
   getAuthenticateOptions(context: ExecutionContext) {
     const req = context.switchToHttp().getRequest();
 
+    console.log("query ", req.query)
+
     return {
       state: {
         redirect_uri: req.query.redirect_uri,

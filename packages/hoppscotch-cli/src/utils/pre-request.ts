@@ -257,6 +257,8 @@ function getFinalBodyFromRequest(
     );
   }
 
+  console.log('here')
+
   return pipe(
     parseBodyEnvVariablesE(request.body.body, envVariables),
     E.mapLeft((e) =>
